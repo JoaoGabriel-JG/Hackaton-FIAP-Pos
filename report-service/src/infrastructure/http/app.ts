@@ -47,7 +47,7 @@ export function createApp(logger: Logger): Express {
       err: Error,
       _req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      _next: express.NextFunction, // eslint-disable-line @typescript-eslint/no-unused-vars
     ) => {
       logger.error({ service: "report-service", message: err.message }, "unhandled error");
       res.status(500).json({ error: "Internal server error" });

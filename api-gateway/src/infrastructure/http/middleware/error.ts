@@ -2,7 +2,12 @@ import type { ErrorRequestHandler } from "express";
 import type { Logger } from "pino";
 
 export function createErrorMiddleware(logger: Logger): ErrorRequestHandler {
-  return (err, req, res, _next) => {
+  return (
+    err,
+    req,
+    res,
+    _next, // eslint-disable-line @typescript-eslint/no-unused-vars
+  ) => {
     logger.error(
       {
         service: "api-gateway",
