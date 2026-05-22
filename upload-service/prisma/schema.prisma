@@ -1,0 +1,16 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model UploadJob {
+  id           String   @id @default(uuid())
+  originalName String
+  filePath     String
+  status       String
+  createdAt    DateTime @default(now())
+}
