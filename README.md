@@ -1,4 +1,4 @@
-# JAUM - Hackathon FIAP POS
+# Hackathon FIAP POS
 
 Backend em microsservicos para auditoria de diagramas (imagem/PDF), com processamento assincrono, IA com guardrails e exposicao de status/relatorio via API Gateway.
 
