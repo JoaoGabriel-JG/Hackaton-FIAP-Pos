@@ -1,4 +1,81 @@
 services:
+  api-gateway:
+    image: node:22-bookworm-slim
+    container_name: jaum-api-gateway
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev -w @jaum/api-gateway"
+    volumes:
+      - ./:/app
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      UPLOAD_SERVICE_URL: http://upload-service:3001
+      REPORT_SERVICE_URL: http://report-service:3003
+    depends_on:
+      - upload-service
+      - report-service
+
+  upload-service:
+    image: node:22-bookworm-slim
+    container_name: jaum-upload-service
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev -w @jaum/upload-service"
+    volumes:
+      - ./:/app
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      DATABASE_URL: file:./upload-service/dev.db
+      RABBITMQ_URL: amqp://jaum:jaum@rabbitmq:5672/
+      RABBITMQ_QUEUE_PROCESSING: ${RABBITMQ_QUEUE_PROCESSING:-diagram_processing}
+      UPLOAD_DIR: ./upload-service/uploads
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  processing-service:
+    image: node:22-bookworm-slim
+    container_name: jaum-processing-service
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev -w @jaum/processing-service"
+    volumes:
+      - ./:/app
+    environment:
+      PORT: 3002
+      DATABASE_URL: file:./processing-service/dev.db
+      RABBITMQ_URL: amqp://jaum:jaum@rabbitmq:5672/
+      RABBITMQ_QUEUE_PROCESSING: ${RABBITMQ_QUEUE_PROCESSING:-diagram_processing}
+      RABBITMQ_QUEUE_REPORT: ${RABBITMQ_QUEUE_REPORT:-diagram_report}
+      UPLOAD_FILES_ROOT: ./upload-service/uploads
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      upload-service:
+        condition: service_started
+
+  report-service:
+    image: node:22-bookworm-slim
+    container_name: jaum-report-service
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev -w @jaum/report-service"
+    volumes:
+      - ./:/app
+    ports:
+      - "3003:3003"
+    environment:
+      PORT: 3003
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: jaum-rabbitmq

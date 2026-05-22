@@ -5,6 +5,7 @@
   "type": "module",
   "workspaces": [
     "packages/*",
+    "api-gateway",
     "upload-service",
     "processing-service",
     "report-service"

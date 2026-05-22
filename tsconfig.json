@@ -8,6 +8,7 @@
     "eslint.config.js",
     "jest.config.cjs",
     "packages/**/*.ts",
+    "api-gateway/**/*.ts",
     "upload-service/**/*.ts",
     "processing-service/**/*.ts",
     "report-service/**/*.ts"
