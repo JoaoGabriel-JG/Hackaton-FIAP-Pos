@@ -12,14 +12,19 @@ type PinoHttpFn = (opts?: {
 
 const pinoHttp = pinoHttpImport as unknown as PinoHttpFn;
 
-function toApiStatus(status: string | null): "processing" | "done" | "failed" {
+function toApiStatus(
+  status: string | null,
+): "Recebido" | "Em processamento" | "Analisado" | "Erro" {
   if (status === "Analisado") {
-    return "done";
+    return "Analisado";
   }
   if (status === "Erro") {
-    return "failed";
+    return "Erro";
   }
-  return "processing";
+  if (status === "Em processamento") {
+    return "Em processamento";
+  }
+  return "Recebido";
 }
 
 function parseJsonArray(value: string): unknown[] {
@@ -71,12 +76,13 @@ export function createApp(logger: Logger): Express {
       jobId: req.params.jobId,
       status: apiStatus,
       summary:
-        apiStatus === "done"
-          ? "Report generated successfully"
-          : apiStatus === "failed"
-            ? "Report generation failed"
-            : "Report not generated yet",
-      findings: [...components, ...risks],
+        apiStatus === "Analisado"
+          ? "Relatorio gerado com sucesso"
+          : apiStatus === "Erro"
+            ? "Falha ao gerar relatorio"
+            : "Relatorio ainda nao gerado",
+      components,
+      risks,
       recommendations,
     });
   });
