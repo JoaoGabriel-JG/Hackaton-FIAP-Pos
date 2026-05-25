@@ -52,6 +52,7 @@ export function createProxyRoutes(deps: ProxyRoutesDeps): Router {
       changeOrigin: true,
       proxyTimeout: 2000,
       timeout: 2000,
+      pathRewrite: { "^/api/reports/": "/reports/" },
       on: {
         error: onProxyError("report-status"),
       },
@@ -65,6 +66,7 @@ export function createProxyRoutes(deps: ProxyRoutesDeps): Router {
       changeOrigin: true,
       proxyTimeout: 2000,
       timeout: 2000,
+      pathRewrite: { "^/api/reports/": "/reports/" },
       on: {
         error: onProxyError("report"),
       },

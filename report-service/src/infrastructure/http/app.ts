@@ -3,6 +3,7 @@ import express, { type Express } from "express";
 import type { Logger } from "pino";
 import pinoHttpImport from "pino-http";
 import type { RequestHandler } from "express";
+import { prisma } from "../persistence/prisma-client.js";
 
 type PinoHttpFn = (opts?: {
   logger: Logger;
@@ -10,6 +11,25 @@ type PinoHttpFn = (opts?: {
 }) => RequestHandler;
 
 const pinoHttp = pinoHttpImport as unknown as PinoHttpFn;
+
+function toApiStatus(status: string | null): "processing" | "done" | "failed" {
+  if (status === "Analisado") {
+    return "done";
+  }
+  if (status === "Erro") {
+    return "failed";
+  }
+  return "processing";
+}
+
+function parseJsonArray(value: string): unknown[] {
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 export function createApp(logger: Logger): Express {
   const app = express();
@@ -26,19 +46,38 @@ export function createApp(logger: Logger): Express {
     res.json({ status: "ok" });
   });
 
-  app.get("/reports/:jobId/status", (req, res) => {
+  app.get("/reports/:jobId/status", async (req, res) => {
+    const result = await prisma.analysisResult.findUnique({
+      where: { jobId: req.params.jobId },
+    });
+
     res.json({
       jobId: req.params.jobId,
-      status: "processing",
+      status: toApiStatus(result?.status ?? null),
     });
   });
 
-  app.get("/reports/:jobId", (req, res) => {
+  app.get("/reports/:jobId", async (req, res) => {
+    const result = await prisma.analysisResult.findUnique({
+      where: { jobId: req.params.jobId },
+    });
+
+    const apiStatus = toApiStatus(result?.status ?? null);
+    const components = parseJsonArray(result?.components ?? "[]");
+    const risks = parseJsonArray(result?.riscos ?? "[]");
+    const recommendations = parseJsonArray(result?.recommendations ?? "[]");
+
     res.json({
       jobId: req.params.jobId,
-      summary: "Report not generated yet",
-      findings: [],
-      recommendations: [],
+      status: apiStatus,
+      summary:
+        apiStatus === "done"
+          ? "Report generated successfully"
+          : apiStatus === "failed"
+            ? "Report generation failed"
+            : "Report not generated yet",
+      findings: [...components, ...risks],
+      recommendations,
     });
   });
 

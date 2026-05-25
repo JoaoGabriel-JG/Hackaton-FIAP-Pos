@@ -88,11 +88,11 @@ describe("api-gateway proxy routes", () => {
 
   it("proxies report routes to report-service", async () => {
     const reportServer = await startStubServer({
-      "GET /api/reports/job-7/status": {
+      "GET /reports/job-7/status": {
         statusCode: 200,
         body: { jobId: "job-7", status: "done" },
       },
-      "GET /api/reports/job-7": {
+      "GET /reports/job-7": {
         statusCode: 200,
         body: { jobId: "job-7", summary: "ok" },
       },
@@ -111,6 +111,8 @@ describe("api-gateway proxy routes", () => {
     expect(statusResponse.body).toEqual({ jobId: "job-7", status: "done" });
     expect(reportResponse.status).toBe(200);
     expect(reportResponse.body).toEqual({ jobId: "job-7", summary: "ok" });
+    expect(reportServer.requests[0]).toMatchObject({ method: "GET", path: "/reports/job-7/status" });
+    expect(reportServer.requests[1]).toMatchObject({ method: "GET", path: "/reports/job-7" });
 
     await reportServer.close();
   });

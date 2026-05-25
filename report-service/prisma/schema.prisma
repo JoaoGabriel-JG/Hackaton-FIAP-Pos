@@ -3,6 +3,16 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
+}
+
+model AnalysisResult {
+  id              String   @id @default(uuid())
+  jobId           String   @unique
+  status          String
+  components      String   @default("[]")
+  riscos          String   @default("[]")
+  recommendations String   @default("[]")
+  createdAt       DateTime @default(now())
 }
