@@ -6,6 +6,7 @@ services:
     command: sh -c "npm ci && npm run dev -w @jaum/api-gateway"
     volumes:
       - ./:/app
+      - /app/node_modules
     ports:
       - "3000:3000"
     environment:
@@ -24,6 +25,7 @@ services:
     command: sh -c "npm ci && npm run dev -w @jaum/upload-service"
     volumes:
       - ./:/app
+      - /app/node_modules
     ports:
       - "3001:3001"
     environment:
@@ -44,6 +46,7 @@ services:
     command: sh -c "npm ci && npm run dev -w @jaum/processing-service"
     volumes:
       - ./:/app
+      - /app/node_modules
     environment:
       PORT: 3002
       DATABASE_URL: file:./processing-service/dev.db
@@ -67,6 +70,7 @@ services:
     command: sh -c "npm ci && npm run dev -w @jaum/report-service"
     volumes:
       - ./:/app
+      - /app/node_modules
     ports:
       - "3003:3003"
     environment:
