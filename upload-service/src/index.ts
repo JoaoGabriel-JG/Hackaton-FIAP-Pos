@@ -19,7 +19,6 @@ async function main() {
 
   const jobRepository = new PrismaJobRepository();
   const queuePublisher = new RabbitMqPublisher();
-  await queuePublisher.connect();
 
   const uploadDiagramUseCase = new UploadDiagramUseCase({
     jobRepository,
