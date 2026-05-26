@@ -1,7 +1,10 @@
 import { describe, expect, it, jest } from "@jest/globals";
 import { AnalysisStatus } from "../../domain/analysis-status.js";
 import type { AnalysisResult } from "../../domain/analysis-result.js";
-import { FileNotFoundError } from "../../domain/errors/processing-errors.js";
+import {
+  FileNotFoundError,
+  InvalidAiResponseError,
+} from "../../domain/errors/processing-errors.js";
 import { ReportPublishError } from "../../domain/errors/processing-errors.js";
 import type { AnalysisRepository } from "../ports/analysis-repository.js";
 import type { DiagramAnalyzer } from "../ports/diagram-analyzer.js";
@@ -144,6 +147,47 @@ describe("ProcessDiagramUseCase", () => {
     ).rejects.toBeInstanceOf(ReportPublishError);
 
     expect(mocks.analysisRepository.markError).toHaveBeenCalledWith("job-1");
+  });
+
+  it("uses fallback analysis when AI provider is unavailable", async () => {
+    const mocks = createMocks();
+    const processing = buildResult({ status: AnalysisStatus.EM_PROCESSAMENTO });
+    const analyzed = buildResult({
+      components: JSON.stringify(["Componente nao identificado pela IA"]),
+      riscos: JSON.stringify([
+        "Analise automatica indisponivel no momento (fallback aplicado)",
+      ]),
+      recommendations: JSON.stringify([
+        "Reprocessar o job quando a cota/servico de IA estiver disponivel",
+        "Revisar manualmente o diagrama para validacao complementar",
+      ]),
+    });
+
+    mocks.analysisRepository.upsertProcessing.mockResolvedValue(processing);
+    mocks.fileReader.read.mockResolvedValue({
+      buffer: Buffer.from("fake"),
+      mimeType: "application/pdf",
+    });
+    mocks.diagramAnalyzer.analyze.mockRejectedValue(
+      new InvalidAiResponseError("quota", "job-1"),
+    );
+    mocks.analysisRepository.markAnalyzed.mockResolvedValue(analyzed);
+    mocks.reportQueuePublisher.publish.mockResolvedValue();
+
+    const useCase = createUseCase(mocks);
+    const result = await useCase.execute({
+      jobId: "job-1",
+      filePath: "/uploads/diagram.pdf",
+    });
+
+    expect(mocks.analysisRepository.markAnalyzed).toHaveBeenCalledWith(
+      "job-1",
+      expect.objectContaining({
+        components: ["Componente nao identificado pela IA"],
+      }),
+    );
+    expect(result).toEqual(analyzed);
+    expect(mocks.analysisRepository.markError).not.toHaveBeenCalled();
   });
 
   it("resolves relative file paths", async () => {

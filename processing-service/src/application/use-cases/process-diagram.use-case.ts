@@ -1,5 +1,9 @@
 import type { AnalysisResult } from "../../domain/analysis-result.js";
-import { ReportPublishError } from "../../domain/errors/processing-errors.js";
+import {
+  InvalidAiResponseError,
+  ReportPublishError,
+} from "../../domain/errors/processing-errors.js";
+import type { DiagramAnalysis } from "../../domain/diagram-analysis.js";
 import type { AnalysisRepository } from "../ports/analysis-repository.js";
 import type { DiagramAnalyzer } from "../ports/diagram-analyzer.js";
 import type { FileReader } from "../ports/file-reader.js";
@@ -27,10 +31,28 @@ export class ProcessDiagramUseCase {
     try {
       const resolvedPath = this.deps.resolveFilePath(input.filePath);
       const file = await this.deps.fileReader.read(resolvedPath);
-      const analysis = await this.deps.diagramAnalyzer.analyze(
-        file.buffer,
-        file.mimeType,
-      );
+      let analysis: DiagramAnalysis;
+      try {
+        analysis = await this.deps.diagramAnalyzer.analyze(
+          file.buffer,
+          file.mimeType,
+        );
+      } catch (error) {
+        if (error instanceof InvalidAiResponseError) {
+          analysis = {
+            components: ["Componente nao identificado pela IA"],
+            risks: [
+              "Analise automatica indisponivel no momento (fallback aplicado)",
+            ],
+            recommendations: [
+              "Reprocessar o job quando a cota/servico de IA estiver disponivel",
+              "Revisar manualmente o diagrama para validacao complementar",
+            ],
+          };
+        } else {
+          throw error;
+        }
+      }
 
       const result = await this.deps.analysisRepository.markAnalyzed(
         input.jobId,
